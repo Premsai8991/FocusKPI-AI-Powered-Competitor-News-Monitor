@@ -6,12 +6,12 @@
 
 ## Key Highlights
 
-- 🚀 Fully automated weekly AI competitor news monitoring workflow
-- 📰 Aggregates official OpenAI and Google AI RSS feeds
-- 🤖 Uses Google Gemini for executive-level summarization
-- 📧 Generates responsive HTML email newsletters
-- ⚙️ Built entirely in n8n using reusable workflow components
-- 🏗️ Designed using deterministic workflow orchestration before AI reasoning
+-  Fully automated weekly AI competitor news monitoring workflow
+-  Aggregates official OpenAI and Google AI RSS feeds
+-  Uses Google Gemini for executive-level summarization
+-  Generates responsive HTML email newsletters
+-  Built entirely in n8n using reusable workflow components
+-  Designed using deterministic workflow orchestration before AI reasoning
 
 ---
 
