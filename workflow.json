@@ -1,0 +1,338 @@
+{
+  "name": "AI-Powered Competitor News Monitor & Executive Weekly Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -288,
+        128
+      ],
+      "id": "762f3cf0-1658-4968-89e1-c83df4b3413e",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        160,
+        624
+      ],
+      "id": "f7f4b5be-60c0-4e41-8a18-3401e787f476",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CjvzjAln6t8BhW6J",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://openai.com/news/rss.xml",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        -96
+      ],
+      "id": "41cab2d2-5e98-44eb-b4f7-c6d06cfe66b5",
+      "name": "Fetch OpenAI RSS"
+    },
+    {
+      "parameters": {
+        "url": "https://blog.google/technology/ai/rss/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        304
+      ],
+      "id": "78c692e8-7b72-4b6c-ab73-41877d1c0e37",
+      "name": "Fetch Google AI RSS"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        352,
+        80
+      ],
+      "id": "7d7607a7-1a26-41b1-9379-9e9980529892",
+      "name": "Merge RSS Feeds"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst combinedFeeds = items\n  .map((item, index) => {\n    const source = index === 0 ? 'OpenAI News' : 'Google AI Blog';\n    const feed = item.json.data || '';\n\n    return `\n==============================\nSOURCE: ${source}\n==============================\n\n${feed}\n`;\n  })\n  .join('\\n\\n');\n\nreturn [\n  {\n    json: {\n      combinedFeeds,\n      sourceCount: items.length,\n      generatedAt: new Date().toISOString(),\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        80
+      ],
+      "id": "35a3cf4e-0898-4471-97b3-382c68e067d4",
+      "name": "Combine RSS Content"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI Competitive Intelligence Analyst.\n\nYou will receive a combined RSS feed from OpenAI News and the Google AI Blog.\n\nYour task is to create ONE professional weekly AI news digest containing EXACTLY FIVE of the most important developments.\n\nIMPORTANT RULES\n\n- Use ONLY information that exists in the RSS feeds.\n- Do NOT invent news, products, companies, dates, or URLs.\n- Remove duplicate or closely related stories.\n- Prefer announcements with the highest impact for developers, enterprises, and AI products.\n- Keep the writing professional and concise.\n\nFor EACH of the five stories use EXACTLY this structure:\n\n## Story 1\n\nTitle: <story title>\n\nSource: <OpenAI News or Google AI Blog>\n\nSummary:\nWrite 2–3 concise sentences explaining the announcement.\n\nWhy it matters:\nWrite 2–3 sentences explaining why this matters for AI product managers, software engineers, startups, or enterprise AI teams.\n\nOriginal Article:\nhttps://...\n\n--------------------------------------------------\n\nRepeat the same structure for Story 2 through Story 5.\n\nAFTER all five stories, include a short section:\n\n## Weekly Takeaway\n\nWrite 3–5 sentences summarizing the biggest trends across this week's announcements.\n\nVERY IMPORTANT\n\nReturn ONLY the digest.\n\nDo NOT include:\n- Markdown hyperlinks like [text](url)\n- Code blocks\n- XML\n- HTML\n- RSS\n- Explanations outside the digest\n\nThe Original Article field MUST contain ONLY the plain URL.\n\nCombined RSS Feed:\n\n{{ $json.combinedFeeds }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        320,
+        448
+      ],
+      "id": "0bb7b909-a276-4b91-9c7f-e1f377c32889",
+      "name": "Generate AI Weekly Digest"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const rawSummary = $json.output ?? 'No AI summary was generated.';\n\nconst escapeHtml = (value) =>\n  String(value)\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;');\n\nlet content = escapeHtml(rawSummary);\n\n// Convert the AI Agent's structured response into email-safe HTML.\ncontent = content\n  // Story and section headings\n  .replace(\n    /^## Story (\\d+)$/gm,\n    '<div style=\"margin:30px 0 12px;padding:9px 14px;background:#eef2ff;border-left:4px solid #172554;border-radius:5px;font-size:13px;font-weight:700;color:#172554;text-transform:uppercase;letter-spacing:.6px;\">Story $1</div>'\n  )\n  .replace(\n    /^## Weekly Takeaway$/gm,\n    '<div style=\"margin:32px 0 12px;padding:12px 16px;background:#ecfdf5;border-left:4px solid #047857;border-radius:6px;font-size:18px;font-weight:700;color:#065f46;\">Weekly Takeaway</div>'\n  )\n  .replace(\n    /^### (.+)$/gm,\n    '<h3 style=\"margin:24px 0 10px;font-size:19px;color:#172554;\">$1</h3>'\n  )\n  .replace(\n    /^## (.+)$/gm,\n    '<h2 style=\"margin:28px 0 12px;font-size:22px;color:#172554;\">$1</h2>'\n  )\n  .replace(\n    /^# (.+)$/gm,\n    '<h1 style=\"margin:28px 0 12px;font-size:26px;color:#172554;\">$1</h1>'\n  )\n\n  // Structured field labels\n  .replace(\n    /^Title:\\s*(.+)$/gm,\n    '<h2 style=\"margin:12px 0 14px;font-size:22px;line-height:1.35;color:#111827;\">$1</h2>'\n  )\n  .replace(\n  /^Source:\\s*(.+)$/gm,\n  '<div style=\"margin:10px 0 18px;\"><span style=\"display:inline-block;background:#E0E7FF;color:#1E3A8A;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:700;\">$1</span></div>'\n)\n  .replace(\n    /^Summary:\\s*$/gm,\n    '<div style=\"margin-top:14px;font-size:14px;font-weight:700;color:#344054;\">Summary</div>'\n  )\n  .replace(\n    /^Why it matters:\\s*$/gm,\n    '<div style=\"margin-top:18px;font-size:14px;font-weight:700;color:#344054;\">Why it matters for AI product teams</div>'\n  )\n  .replace(\n    /^Original Article:\\s*$/gm,\n    '<div style=\"margin-top:18px;font-size:14px;font-weight:700;color:#344054;\">Original article</div>'\n  )\n\n  // Convert dashed separators into clean horizontal rules\n  .replace(\n    /^-{5,}$/gm,\n    '<hr style=\"border:none;border-top:1px solid #e5e7eb;margin:32px 0;\">'\n  )\n\n  // Bold Markdown\n  .replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>')\n\n  // Convert plain URLs into clean buttons\n  .replace(\n    /(^|[\\s>])(https?:\\/\\/[^\\s<]+)/g,\n    (match, prefix, url) => {\n      const cleanUrl = url.replace(/[.,;:!?]+$/, '');\n      const trailing = url.slice(cleanUrl.length);\n\n      return `${prefix}<a href=\"${cleanUrl}\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"display:inline-block;margin:12px 0 6px;padding:12px 22px;background:#172554;color:#ffffff;text-decoration:none;border-radius:10px;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(23,37,84,.25);transition:all .2s ease;\">Read original article</a>${trailing}`;\n    }\n  )\n\n  // Bullet lists\n  .replace(/^\\s*[-*]\\s+(.+)$/gm, '<li>$1</li>')\n\n  // Paragraph spacing and line breaks\n  .replace(\n    /\\n{2,}/g,\n    '</p><p style=\"margin:10px 0;line-height:1.75;\">'\n  )\n  .replace(/\\n/g, '<br>');\n\n// Wrap consecutive list items inside a styled unordered list.\ncontent = content.replace(\n  /(?:<li>.*?<\\/li>(?:<br>)?)+/gs,\n  (match) =>\n    `<ul style=\"margin:12px 0 18px;padding-left:24px;line-height:1.75;\">${match.replace(/<br>/g, '')}</ul>`\n);\n\nconst generatedDate = new Date().toLocaleDateString('en-US', {\n  weekday: 'long',\n  year: 'numeric',\n  month: 'long',\n  day: 'numeric',\n});\n\nconst html = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n</head>\n\n<body style=\"margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#202124;\">\n  <table\n    role=\"presentation\"\n    width=\"100%\"\n    cellspacing=\"0\"\n    cellpadding=\"0\"\n    border=\"0\"\n    style=\"width:100%;background:#f4f6f8;padding:24px 12px;\"\n  >\n    <tr>\n      <td align=\"center\">\n\n        <table\n          role=\"presentation\"\n          width=\"100%\"\n          cellspacing=\"0\"\n          cellpadding=\"0\"\n          border=\"0\"\n          style=\"width:100%;max-width:720px;background:#ffffff;border:1px solid #e1e5ea;border-radius:12px;overflow:hidden;\"\n        >\n\n          <tr>\n            <td style=\"padding:30px 32px;background:#172554;color:#ffffff;\">\n              <div style=\"font-size:12px;letter-spacing:1.5px;text-transform:uppercase;opacity:.82;\">\n                Weekly Intelligence Brief\n              </div>\n\n              <h1 style=\"margin:9px 0 7px;font-size:29px;line-height:1.2;color:#ffffff;\">\n                AI Competitor News Digest\n              </h1>\n\n              <div style=\"font-size:14px;line-height:1.5;opacity:.88;\">\n                OpenAI News and Google AI Blog · ${generatedDate}\n              </div>\n            </td>\n          </tr>\n\n          <tr>\n            <td style=\"padding:30px 32px;\">\n              <div style=\"font-size:16px;line-height:1.75;color:#202124;\">\n                <p style=\"margin:0 0 10px;line-height:1.75;\">\n                  ${content}\n                </p>\n              </div>\n\n              <div style=\"margin-top:32px;padding:18px;background:#f8fafc;border-left:4px solid #172554;border-radius:6px;\">\n                <div style=\"margin-bottom:5px;font-size:14px;font-weight:700;color:#172554;\">\n                  Sources monitored\n                </div>\n\n                <div style=\"font-size:14px;line-height:1.6;color:#475467;\">\n                  OpenAI News RSS and Google AI Blog RSS\n                </div>\n              </div>\n            </td>\n          </tr>\n\n          <tr>\n            <td style=\"padding:18px 32px;background:#f8fafc;border-top:1px solid #e5e7eb;font-size:12px;line-height:1.6;color:#667085;\">\n              Generated automatically using n8n, Google Gemini, RSS feeds, and the Gmail API.\n            </td>\n          </tr>\n\n        </table>\n\n      </td>\n    </tr>\n  </table>\n</body>\n</html>\n`;\n\nreturn {\n  json: {\n    ...$json,\n    emailSubject: `Weekly AI Competitor News Digest - ${generatedDate}`,\n    htmlDigest: html,\n  },\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        448
+      ],
+      "id": "f90d7677-2bd6-4a9b-a920-893827af01aa",
+      "name": "Format HTML Digest"
+    },
+    {
+      "parameters": {
+        "sendTo": "premsainellure2022@gmail.com",
+        "subject": "={{ $json.emailSubject }}",
+        "message": "={{ $json.htmlDigest }}",
+        "options": {
+          "appendAttribution": false,
+          "replyToSenderOnly": "={{ false }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        448
+      ],
+      "id": "d81c4b22-8681-48d3-b113-33a73b71ce25",
+      "name": "Send Digest via Gmail",
+      "webhookId": "aeb3b616-bdfc-453b-86cd-0c8199906984",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "v4Bbv55Wom0nBUai",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "ORCHESTRATION\n\nWeekly scheduler\nRuns every Monday at 9:00 AM\nStarts the weekly automation pipeline",
+        "height": 192,
+        "width": 176
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -336,
+        288
+      ],
+      "typeVersion": 1,
+      "id": "2e8d4876-63a2-451d-8b26-8995b529cee4",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "INGESTION\n\nFetch AI news from:\n• OpenAI News RSS\n• Google AI Blog RSS",
+        "height": 144,
+        "width": 192
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -32,
+        80
+      ],
+      "typeVersion": 1,
+      "id": "ee9c795e-22a2-4816-b9bd-19e5c3b9bb7e",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "NORMALIZATION\n\nMerge RSS feeds\nStandardize article format\nPrepare structured\ninput for AI",
+        "width": 224
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        480,
+        -64
+      ],
+      "typeVersion": 1,
+      "id": "5dd7c0ae-357b-43d0-9229-b99062308430",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "AI INTELLIGENCE\n\nGenerate executive\nsummary\nExtract key insights\nHighlight business\nimpact",
+        "height": 176,
+        "width": 176
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -64,
+        608
+      ],
+      "typeVersion": 1,
+      "id": "a28344c8-c1f4-4421-a923-08536632bcd5",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "DELIVERY\n\nGenerate HTML\nnewsletter\nDeliver digest\nautomatically\nvia Gmail",
+        "height": 176,
+        "width": 150
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        736,
+        592
+      ],
+      "typeVersion": 1,
+      "id": "f75c75dd-dd72-4060-861f-ed9aa1798a3c",
+      "name": "Sticky Note4"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch OpenAI RSS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Google AI RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate AI Weekly Digest",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch OpenAI RSS": {
+      "main": [
+        [
+          {
+            "node": "Merge RSS Feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Google AI RSS": {
+      "main": [
+        [
+          {
+            "node": "Merge RSS Feeds",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge RSS Feeds": {
+      "main": [
+        [
+          {
+            "node": "Combine RSS Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine RSS Content": {
+      "main": [
+        [
+          {
+            "node": "Generate AI Weekly Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate AI Weekly Digest": {
+      "main": [
+        [
+          {
+            "node": "Format HTML Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format HTML Digest": {
+      "main": [
+        [
+          {
+            "node": "Send Digest via Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "533b9a06-aa03-402d-a650-4e7af4507fa6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5b2e765b9ba822c7a3eb47ac29ed286bea5b3138dab0bf7f91b8804c254a344e"
+  },
+  "nodeGroups": [],
+  "id": "J7Mu9PmZ0Dmb8XPb",
+  "tags": []
+}
