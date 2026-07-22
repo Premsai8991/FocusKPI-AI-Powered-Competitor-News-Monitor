@@ -12,15 +12,15 @@ The final workflow design, implementation, testing, debugging, and validation we
 
 | Tool | Purpose |
 |------|---------|
-| ChatGPT (GPT-5.5) | Workflow architecture, prompt engineering, documentation, debugging, design review |
+| ChatGPT | Workflow architecture, prompt engineering, documentation, debugging, design review |
 | Google Gemini | Executive-level AI summarization inside the n8n workflow |
-| n8n Cloud | Workflow automation platform |
+| n8n Cloud | Workflow automation and orchestration platform |
 
 ---
 
 # How AI Was Used
 
-AI was used throughout the project for engineering assistance rather than code generation alone.
+AI was used as a design and review assistant. I made the final architectural decisions, configured and connected the n8n nodes, created the workflow logic, tested the end-to-end execution, validated the email output, and prepared the final submission.
 
 Primary areas where AI assisted include:
 

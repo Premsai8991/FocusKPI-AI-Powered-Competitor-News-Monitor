@@ -4,7 +4,7 @@
 
 This document contains representative prompts used during the design and implementation of the AI-Powered Competitor News Monitor & Executive Weekly Digest.
 
-Development primarily used **ChatGPT (GPT-5.5)** as an engineering assistant for workflow architecture, prompt engineering, debugging, documentation, and design review.
+Development primarily used **ChatGPT** as an engineering assistant for workflow architecture, prompt engineering, debugging, documentation, and design review.
 
 Google Gemini was used inside the workflow itself as the AI summarization engine.
 
@@ -14,8 +14,27 @@ Google Gemini was used inside the workflow itself as the AI summarization engine
 
 | Tool | Purpose |
 |------|---------|
-| ChatGPT (GPT-5.5) | Architecture, workflow design, prompt engineering, debugging, documentation |
+| ChatGPT | Architecture, workflow design, prompt engineering, debugging, documentation |
 | Google Gemini 3 Flash Preview | Executive news summarization inside n8n |
+
+---
+
+# Scope of AI Assistance
+
+AI was used as an engineering assistant throughout the development process.
+
+Its primary role was to help with:
+
+- Brainstorming workflow architecture
+- Reviewing automation design decisions
+- Refining prompt engineering
+- Assisting with JavaScript debugging
+- Improving project documentation
+
+AI suggestions were treated as design recommendations rather than final implementations.
+
+The final workflow architecture, node configuration, expressions, workflow logic, testing, debugging, HTML email formatting, and validation were completed and verified by the project author before submission.
+
 
 ---
 
