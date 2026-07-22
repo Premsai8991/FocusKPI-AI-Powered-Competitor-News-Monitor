@@ -50,7 +50,7 @@ The workflow is organized into five logical stages:
                ┌──────────────────────┐
                │ Gmail Delivery       │
                └──────────────────────┘
-
+```
 
 ---
 
